@@ -8,6 +8,8 @@ numpy = "*"
 pandas = "*"
 polars = "*"
 scipy = "*"
+matplotlib = "*"
+ffc = "*"
 
 [dev-packages]
 

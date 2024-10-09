@@ -1,2 +1,4 @@
 *draft*
 */**.python-version
+pytest_cache
+*/**.pyc
