@@ -3,31 +3,13 @@ from datetime import datetime
 
 
 class Indicator:
-    _return_pct: float = 0.0
-    _return_sum: float = 0.0
-    _return_square: float = 0.0
-    return_mean: float = 0.0
-    return_std: float = 0.0
+    """
+    计算净值指标的类
 
-    annual_return_acc: float = 0.0
-    annual_return_pct: float = 0.0
-    _sum_return: float = 0.0
-    _down_return_sum: float = 0.0
-    _excess_sum_return: float = 0.0
-    _num: int = 0
-    _down_num: int = 0
-    excess_return_avg: float = 0.0
-    _annual_return_square: float = 0.0
-    _annual_return_down_square: float = 0.0
-
-    drawdown: float = 0.0
-    drawdown_high_spot: float = 0.0
-    _new_drawdown: float = 0.0
-    sharp_ratio: float = 0.0
-    sortino_ratio: float = 0.0
-    calmar_ratio: float = 0.0
-
-    duration: int = 0
+    对外暴露的接口有两个, 一个是初始化方法, 一个是update方法。
+    初始化方法。如果传入的trade_date和net是数组, 则在实例化时会自动计算净值指标。
+    update方法用于更新净值指标。
+    """
 
     def __init__(
         self,
@@ -35,6 +17,50 @@ class Indicator:
         net: Union[float, Iterable],
         rf: Union[float, Iterable],
     ):
+        """
+        初始化方法。如果传入的trade_date和net是数组, 则在实例化时会自动计算净值指标。
+        对外暴露的指标属性为：
+
+        :annual_return_acc: 年化累计收益率
+        :drawdown: 最大回撤
+        :drawdown_start_date: 最大回撤开始日期
+        :drawdown_end_date: 最大回撤结束日期
+        :drawdown_recovery_date: 最大回撤恢复日期
+        :sharp_ratio: 夏普比率
+        :sortino_ratio: 索提诺比率
+        :calmar_ratio: 卡玛比率
+        ::return_mean: 日均收益率均值
+        ::return_std: 日均收益率标准差
+        :_annual_return_std: 年化收益率标准差
+        :_annual_return_down_std: 年化下行收益率标准差
+        """
+        self._return_pct: float = 0.0
+        self._return_sum: float = 0.0
+        self._return_square: float = 0.0
+        self.return_mean: float = 0.0
+        self.return_std: float = 0.0
+
+        self.annual_return_acc: float = 0.0
+        self.annual_return_pct: float = 0.0
+        self._sum_return: float = 0.0
+        self._down_return_sum: float = 0.0
+        self._excess_sum_return: float = 0.0
+        self._num: int = 0
+        self._down_num: int = 0
+        self.excess_return_avg: float = 0.0
+        self._annual_return_square: float = 0.0
+        self._annual_return_down_square: float = 0.0
+        self._annual_return_std: float = 0.0
+        self._annual_return_down_std: float = 0.0
+
+        self.drawdown: float = 0.0
+        self.drawdown_high_spot: float = 0.0
+        self._new_drawdown: float = 0.0
+        self.sharp_ratio: float = 0.0
+        self.sortino_ratio: float = 0.0
+        self.calmar_ratio: float = 0.0
+
+        self.duration: int = 0
         if (
             isinstance(trade_date, str)
             and isinstance(net, float)
@@ -97,7 +123,7 @@ class Indicator:
 
     @net.setter
     def net(self, value):
-        # 计算日均受益均值
+        # 计算日均收益均值
         self._num += 1
         self._return_pct = value / self._net - 1
         self._return_sum += self._return_pct
@@ -140,13 +166,22 @@ class Indicator:
         self._net = value
 
     def _cal_duration(self, trade_date: str) -> int:
+        """计算当前日期距离初始日期的天数"""
         today = datetime.strptime(trade_date, "%Y-%m-%d")
         return (today - self._init_date).days
 
     def _cal_annual_return(self, ret: float, duration: int) -> float:
+        """计算年化收益率"""
         return ret * 252 / duration
 
     def update(self, trade_date: str, net: float, rf: float | None = None):
+        """
+        更新净值指标
+
+        :param trade_date: 交易日期
+        :param net: 净值
+        :param rf: 无风险利率
+        """
         if rf is not None:
             self.rf = rf
         self.trade_date = trade_date
