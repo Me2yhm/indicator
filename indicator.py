@@ -213,7 +213,7 @@ class Indicator:
                 self.drawdown_start_date = self._last_max_date
                 self.drawdown_end_date = self._last_min_date
                 self.drawdown_recovery_date = ""
-        if self.net == self.drawdown_high_spot:
+        if self.net == self.drawdown_high_spot and self.drawdown_recovery_date == "":
             self.drawdown_recovery_date = self.trade_date
 
     def cal_sharp_ratio(self):
