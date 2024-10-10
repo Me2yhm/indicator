@@ -2,3 +2,4 @@
 */**.python-version
 pytest_cache
 */**.pyc
+node_modules/

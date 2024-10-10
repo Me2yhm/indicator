@@ -1,0 +1,14 @@
+{
+  "name": "indicator-frontend",
+  "version": "1.0.0",
+  "description": "calculate some indicators of fund net value",
+  "main": "index.js",
+  "author": "yang",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}
