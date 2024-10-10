@@ -1,5 +1,32 @@
 class Indicator {
+    /**
+     * 计算净值指标的类
+     *
+     * 对外暴露的接口有两个, 一个是初始化方法, 一个是update方法。
+     * 初始化方法。如果传入的trade_date和net是数组, 则在实例化时会自动计算净值指标。
+     * update方法用于更新净值指标。
+     */
+
     constructor(tradeDate, net, rf) {
+        /**
+         * 初始化方法。如果传入的trade_date和net是数组, 则在实例化时会自动计算净值指标。
+         * 对外暴露的指标属性为：
+         *
+         * :return_acc: 累计收益率
+         * :annual_return_acc: 年化累计收益率
+         * :drawdown: 最大回撤
+         * :drawdown_start_date: 最大回撤开始日期
+         * :drawdown_end_date: 最大回撤结束日期
+         * :drawdown_recovery_date: 最大回撤恢复日期
+         * :sharp_ratio: 夏普比率
+         * :sortino_ratio: 索提诺比率
+         * :calmar_ratio: 卡玛比率
+         * :return_mean: 日均收益率均值
+         * :return_std: 日均收益率标准差
+         * :_annual_return_std: 年化收益率标准差
+         * :_annual_return_down_std: 年化下行收益率标准差
+         */
+        this.returnAcc = 0.0;
         this._returnPct = 0.0;
         this._returnSum = 0.0;
         this._returnSquare = 0.0;
@@ -16,6 +43,8 @@ class Indicator {
         this.excessReturnAvg = 0.0;
         this._annualReturnSquare = 0.0;
         this._annualReturnDownSquare = 0.0;
+        this._annualReturnStd = 0.0;
+        this._annualReturnDownStd = 0.0;
 
         this.drawdown = 0.0;
         this.drawdownHighSpot = 0.0;
@@ -78,28 +107,33 @@ class Indicator {
         return this._tradeDate;
     }
 
+    get net() {
+        return this._net;
+    }
+
     set tradeDate(value) {
         this.duration = this._calDuration(value);
         this._tradeDate = value;
     }
 
-    get net() {
-        return this._net;
-    }
-
     set net(value) {
+        // 计算日均收益均值
         this._num += 1;
+        this.returnAcc = value / this.initNet - 1;
         this._returnPct = value / this._net - 1;
         this._returnSum += this._returnPct;
         this._returnSquare += this._returnPct ** 2;
         this.returnMean = this._returnSum / this._num;
 
-        this.annualReturnAcc = this._calAnnualReturn(value / this.initNet - 1, this.duration);
+        // 计算年化收益率
+        this.annualReturnAcc = this._calAnnualReturn(this.returnAcc, this.duration);
         this.annualReturnPct = this._calAnnualReturn(this._returnPct, 1);
 
+        // 计算超额收益率
         this._excessSumReturn += this.annualReturnPct - this.rf;
         this.excessReturnAvg = this._excessSumReturn / this._num;
 
+        // 计算年化收益率、下行收益率和日均受益率的标准差
         this._annualReturnSquare += (this.annualReturnPct - this.rf) ** 2;
         if (this.annualReturnPct < this.rf) {
             this._annualReturnDownSquare += (this.annualReturnPct - this.rf) ** 2;
@@ -116,15 +150,24 @@ class Indicator {
     }
 
     _calDuration(tradeDate) {
+        /** 计算当前日期距离初始日期的天数 */
         const today = new Date(tradeDate);
         return (today - this._initDate) / (1000 * 60 * 60 * 24);
     }
 
     _calAnnualReturn(ret, duration) {
+        /** 计算年化收益率 */
         return ret * 252 / duration;
     }
 
     update(tradeDate, net, rf = null) {
+        /**
+         * 更新净值指标
+         *
+         * @param {string} tradeDate 交易日期
+         * @param {number} net 净值
+         * @param {number} [rf] 无风险利率
+         */
         if (rf !== null) {
             this.rf = rf;
         }
@@ -137,6 +180,11 @@ class Indicator {
     }
 
     calDrawdown() {
+        /**
+         * 计算最大回撤
+         * 当有多个最低点时取最早的
+         * 当有多个最大回撤时取最近的
+         */
         if (this.net >= this._maxNet) {
             this._maxNet = this.net;
             this._minNet = this.net;

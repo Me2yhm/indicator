@@ -21,6 +21,7 @@ class Indicator:
         初始化方法。如果传入的trade_date和net是数组, 则在实例化时会自动计算净值指标。
         对外暴露的指标属性为：
 
+        :return_acc: 累计收益率
         :annual_return_acc: 年化累计收益率
         :drawdown: 最大回撤
         :drawdown_start_date: 最大回撤开始日期
@@ -34,6 +35,7 @@ class Indicator:
         :_annual_return_std: 年化收益率标准差
         :_annual_return_down_std: 年化下行收益率标准差
         """
+        self.return_acc: float = 0.0
         self._return_pct: float = 0.0
         self._return_sum: float = 0.0
         self._return_square: float = 0.0
@@ -125,15 +127,14 @@ class Indicator:
     def net(self, value):
         # 计算日均收益均值
         self._num += 1
+        self.return_acc = value / self.init_net - 1
         self._return_pct = value / self._net - 1
         self._return_sum += self._return_pct
         self._return_square += self._return_pct**2
         self.return_mean = self._return_sum / self._num
 
         # 计算年化收益率
-        self.annual_return_acc = self._cal_annual_return(
-            value / self.init_net - 1, self.duration
-        )
+        self.annual_return_acc = self._cal_annual_return(self.return_acc, self.duration)
         self.annual_return_pct = self._cal_annual_return(self._return_pct, 1)
 
         # 计算超额收益率
