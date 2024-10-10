@@ -38,7 +38,7 @@ def calculate_max_drawdown(data: pd.DataFrame):
 
 def calculate_sharpe_ratio(data: pd.DataFrame, risk_free_rate: float = 0.0):
     returns = data["net_value"].pct_change().dropna()
-    returns = returns.apply(indicator._cal_annual_return, duration=indicator.duration)
+    returns = returns.apply(indicator._cal_annual_return, duration=1)
     excess_returns = returns - risk_free_rate
     mean_excess_return = excess_returns.mean()
     std_dev = excess_returns.std()
@@ -49,6 +49,7 @@ def calculate_sharpe_ratio(data: pd.DataFrame, risk_free_rate: float = 0.0):
 
 def calculate_sortino_ratio(data: pd.DataFrame, risk_free_rate: float = 0.0):
     returns = data["net_value"].pct_change().dropna()
+    returns = returns.apply(indicator._cal_annual_return, duration=1)
     excess_returns = returns - risk_free_rate
     mean_excess_return = excess_returns.mean()
     downside_returns = excess_returns[excess_returns < 0]

@@ -233,6 +233,7 @@ class Indicator {
     }
 }
 
+module.exports = Indicator;
 // Example usage:
 // const indicator = new Indicator("2023-01-01", 1000, 0.02);
 // indicator.update("2023-01-02", 1010);

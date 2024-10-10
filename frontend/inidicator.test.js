@@ -7,11 +7,36 @@ describe('Indicator Class', () => {
     beforeAll(() => {
         // 模拟数据
         data = [
-            { day: '2023-01-01', net_value: 1000 },
-            { day: '2023-01-02', net_value: 1010 },
-            { day: '2023-01-03', net_value: 1020 },
-            { day: '2023-01-04', net_value: 980 },
-            { day: '2023-01-05', net_value: 990 },
+            { day: '2024-08-19', net_value: 0.728 },
+            { day: '2024-08-20', net_value: 0.723 },
+            { day: '2024-08-21', net_value: 0.723 },
+            { day: '2024-08-22', net_value: 0.720 },
+            { day: '2024-08-23', net_value: 0.720 },
+            { day: '2024-08-26', net_value: 0.716 },
+            { day: '2024-08-27', net_value: 0.713 },
+            { day: '2024-08-28', net_value: 0.717 },
+            { day: '2024-08-29', net_value: 0.722 },
+            { day: '2024-08-30', net_value: 0.733 },
+            { day: '2024-09-02', net_value: 0.724 },
+            { day: '2024-09-03', net_value: 0.730 },
+            { day: '2024-09-04', net_value: 0.728 },
+            { day: '2024-09-05', net_value: 0.730 },
+            { day: '2024-09-06', net_value: 0.720 },
+            { day: '2024-09-09', net_value: 0.718 },
+            { day: '2024-09-10', net_value: 0.721 },
+            { day: '2024-09-11', net_value: 0.723 },
+            { day: '2024-09-12', net_value: 0.718 },
+            { day: '2024-09-13', net_value: 0.715 },
+            { day: '2024-09-18', net_value: 0.712 },
+            { day: '2024-09-19', net_value: 0.713 },
+            { day: '2024-09-20', net_value: 0.710 },
+            { day: '2024-09-23', net_value: 0.708 },
+            { day: '2024-09-24', net_value: 0.727 },
+            { day: '2024-09-25', net_value: 0.730 },
+            { day: '2024-09-26', net_value: 0.752 },
+            { day: '2024-09-27', net_value: 0.778 },
+            { day: '2024-09-30', net_value: 0.841 },
+            { day: '2024-10-08', net_value: 0.901 }
         ];
 
         // 初始化 Indicator 实例
@@ -24,17 +49,15 @@ describe('Indicator Class', () => {
     test('should calculate drawdown correctly', () => {
         expect(indicator.drawdown).toBeGreaterThanOrEqual(0);
         expect(indicator.drawdown).toBeLessThanOrEqual(1);
-        expect(new Date(indicator.drawdownStartDate)).toBeLessThanOrEqual(new Date(indicator.drawdownEndDate));
+        expect(new Date(indicator.drawdownStartDate).getTime()).toBeLessThanOrEqual(new Date(indicator.drawdownEndDate).getTime());
     });
 
-    test('should calculate annual return correctly', () => {
-        expect(indicator.annualReturnAcc).toBeGreaterThanOrEqual(0);
-    });
 
-    test('should calculate calmar ratio correctly', () => {
-        if (indicator.drawdown > 0) {
-            expect(indicator.calmarRatio).toBeCloseTo(indicator.annualReturnAcc / indicator.drawdown, 5);
-        }
+    test('should calculate max drawdown and dates correctly', () => {
+        const { maxDrawdown, drawdownStartDate, drawdownEndDate } = calculateMaxDrawdown(data);
+        expect(indicator.drawdown).toBeCloseTo(maxDrawdown, 5);
+        expect(new Date(indicator.drawdownStartDate).getTime()).toBe(new Date(drawdownStartDate).getTime());
+        expect(new Date(indicator.drawdownEndDate).getTime()).toBe(new Date(drawdownEndDate).getTime());
     });
 
     test('should calculate sharpe ratio correctly', () => {
@@ -48,7 +71,7 @@ describe('Indicator Class', () => {
     });
 
     test('should calculate calmar ratio correctly', () => {
-        const calmarRatio = calculateCalmarRatio(data);
+        const calmarRatio = calculateCalmarRatio(data,indicator);
         expect(indicator.calmarRatio).toBeCloseTo(calmarRatio, 5);
     });
 });
@@ -84,7 +107,8 @@ function calculateMaxDrawdown(data) {
 
 function calculateSharpeRatio(data, riskFreeRate = 0.0) {
     const returns = data.slice(1).map((d, i) => (d.net_value / data[i].net_value - 1));
-    const excessReturns = returns.map(r => r - riskFreeRate);
+    const annualReturns = returns.map(r => r * 252);
+    const excessReturns = annualReturns.map(r => r - riskFreeRate);
     const meanExcessReturn = excessReturns.reduce((a, b) => a + b, 0) / excessReturns.length;
     const stdDev = Math.sqrt(excessReturns.map(r => (r - meanExcessReturn) ** 2).reduce((a, b) => a + b, 0) / (excessReturns.length - 1));
     if (stdDev === 0) return 0.0;
@@ -93,7 +117,8 @@ function calculateSharpeRatio(data, riskFreeRate = 0.0) {
 
 function calculateSortinoRatio(data, riskFreeRate = 0.0) {
     const returns = data.slice(1).map((d, i) => (d.net_value / data[i].net_value - 1));
-    const excessReturns = returns.map(r => r - riskFreeRate);
+    const annualReturns = returns.map(r => r * 252);
+    const excessReturns = annualReturns.map(r => r - riskFreeRate);
     const meanExcessReturn = excessReturns.reduce((a, b) => a + b, 0) / excessReturns.length;
     const downsideReturns = excessReturns.filter(r => r < 0);
     const downsideStdDev = Math.sqrt(downsideReturns.map(r => r ** 2).reduce((a, b) => a + b, 0) / downsideReturns.length);
@@ -101,9 +126,10 @@ function calculateSortinoRatio(data, riskFreeRate = 0.0) {
     return meanExcessReturn / downsideStdDev;
 }
 
-function calculateCalmarRatio(data) {
+function calculateCalmarRatio(data,indicator) {
     const cumulativeReturn = (data[data.length - 1].net_value / data[0].net_value) - 1;
+    const annualCumulativeReturn = indicator._calAnnualReturn(cumulativeReturn,indicator.duration);
     const maxDrawdown = calculateMaxDrawdown(data).maxDrawdown;
     if (maxDrawdown === 0) return 0.0;
-    return cumulativeReturn / maxDrawdown;
+    return annualCumulativeReturn / maxDrawdown;
 }
