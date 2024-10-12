@@ -16,6 +16,7 @@ class Indicator:
         trade_date: Union[str, Iterable],
         net: Union[float, Iterable],
         rf: Union[float, Iterable],
+        ydays: int = 252,
     ):
         """
         初始化方法。如果传入的trade_date和net是数组, 则在实例化时会自动计算净值指标。
@@ -63,6 +64,7 @@ class Indicator:
         self.calmar_ratio: float = 0.0
 
         self.duration: int = 0
+        self.ydays = ydays
         if (
             isinstance(trade_date, str)
             and isinstance(net, float)
@@ -156,13 +158,14 @@ class Indicator:
                 (self._annual_return_square - self._num * self.excess_return_avg**2)
                 / (self._num - 1)
             ) ** 0.5
-            self._annual_return_down_std = (
-                (
-                    self._annual_return_down_square
-                    - self._down_return_sum**2 / self._down_num
-                )
-                / (self._down_num - 1)
-            ) ** 0.5
+            if self._down_num > 1:
+                self._annual_return_down_std = (
+                    (
+                        self._annual_return_down_square
+                        - self._down_return_sum**2 / self._down_num
+                    )
+                    / (self._down_num - 1)
+                ) ** 0.5
 
         self._net = value
 
@@ -173,7 +176,7 @@ class Indicator:
 
     def _cal_annual_return(self, ret: float, duration: int) -> float:
         """计算年化收益率"""
-        return ret * 252 / duration
+        return ret * self.ydays / duration
 
     def update(self, trade_date: str, net: float, rf: float | None = None):
         """
@@ -213,11 +216,13 @@ class Indicator:
                 self.drawdown_start_date = self._last_max_date
                 self.drawdown_end_date = self._last_min_date
                 self.drawdown_recovery_date = ""
-        if self.net == self.drawdown_high_spot and self.drawdown_recovery_date == "":
+        if self.net >= self.drawdown_high_spot and self.drawdown_recovery_date == "":
             self.drawdown_recovery_date = self.trade_date
 
     def cal_sharp_ratio(self):
         assert self._annual_return_square >= 0, "Return square should be non-negative"
+        if self._annual_return_std == 0.0:
+            return 0.0
         if self._num > 1:
             self.sharp_ratio = (self.excess_return_avg) / self._annual_return_std
 
@@ -233,3 +238,23 @@ class Indicator:
             ) ** 0.5
         else:
             self.sortino_ratio = 0.0
+
+    def as_dict(self):
+        return {
+            "return_acc": self.return_acc,
+            "annual_return_acc": self.annual_return_acc,
+            "drawdown": self.drawdown,
+            "drawdown_start_date": self.drawdown_start_date,
+            "drawdown_end_date": self.drawdown_end_date,
+            "drawdown_recovery_date": self.drawdown_recovery_date,
+            "sharp_ratio": self.sharp_ratio,
+            "sortino_ratio": self.sortino_ratio,
+            "calmar_ratio": self.calmar_ratio,
+            "return_mean": self.return_mean,
+            "return_std": self.return_std,
+            "annual_return_std": self._annual_return_std,
+            "downside_stdev": self._annual_return_down_std,
+        }
+
+    def __repr__(self) -> str:
+        return self.as_dict().__str__()
